@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ЖКХ">
+<meta name="theme-color" content="#F4F1EA">
+<title>Коммунальные платежи</title>
+<style>
+  :root{
+    --paper:#F4F1EA; --surface:#FFFFFF; --ink:#22323C; --muted:#6B7780;
+    --line:#E6E0D4; --line-soft:#F2EEE4;
+    --clear:#2E7D5B; --clear-bg:#E7F1EB;
+    --debt:#BF4A30; --debt-bg:#FBEAE4;
+    --field:#FBF9F4;
+    --shadow:0 1px 3px rgba(34,50,60,.07), 0 6px 18px rgba(34,50,60,.06);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--paper);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    font-size:16px;line-height:1.35;-webkit-font-smoothing:antialiased;padding-bottom:42px;}
+  .wrap{max-width:520px;margin:0 auto;padding:0 12px;}
+  .tnum{font-variant-numeric:tabular-nums;}
+
+  header{padding:16px 0 4px;text-align:center;}
+  .appname{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);}
+  .yearbar{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:6px;}
+  .yearbar button{border:none;background:var(--surface);color:var(--ink);width:42px;height:42px;
+    border-radius:50%;font-size:23px;cursor:pointer;box-shadow:var(--shadow);
+    display:flex;align-items:center;justify-content:center;}
+  .yearbar button:active{transform:scale(.94);}
+  .yearbar .yr{font-size:27px;font-weight:700;min-width:96px;text-align:center;}
+
+  .months{display:flex;gap:7px;overflow-x:auto;padding:12px 2px 4px;scrollbar-width:none;}
+  .months::-webkit-scrollbar{display:none;}
+  .mchip{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);color:var(--muted);
+    border-radius:11px;padding:9px 13px;font-size:15px;font-weight:600;cursor:pointer;position:relative;}
+  .mchip.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .mchip .pip{position:absolute;top:5px;right:6px;width:7px;height:7px;border-radius:50%;background:transparent;}
+  .mchip .pip.debt{background:var(--debt);} .mchip .pip.clear{background:var(--clear);}
+  .mchip.active .pip.debt{background:#FF9E84;} .mchip.active .pip.clear{background:#86E0B7;}
+
+  .card{background:var(--surface);border-radius:18px;box-shadow:var(--shadow);border:1px solid var(--line);
+    margin-top:12px;overflow:hidden;}
+  .card-title{font-size:19px;font-weight:800;padding:14px 16px 4px;}
+
+  table{width:100%;border-collapse:collapse;}
+  .tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .tscroll table{min-width:640px;}
+  th.l, td.svc{position:sticky;left:0;z-index:1;background:var(--surface);}
+  .grouprow td.svc, .grouprow td{background:var(--surface);}
+  .calccell{width:100%;min-width:62px;text-align:right;font-size:15px;font-weight:700;
+    padding:9px 8px;color:var(--ink);font-variant-numeric:tabular-nums;
+    background:#EFF5F1;border:1px solid #D7E6DD;border-radius:9px;}
+  .calccell.empty{color:var(--muted);font-weight:600;}
+  thead th{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);
+    padding:8px 6px;text-align:right;border-bottom:1px solid var(--line);}
+  thead th.l{text-align:left;padding-left:16px;}
+  .grouprow td{padding:10px 16px 2px;font-size:15px;font-weight:800;color:var(--ink);
+    text-decoration:underline;text-underline-offset:3px;}
+  tbody td{padding:5px 6px;border-bottom:1px solid var(--line-soft);}
+  td.svc{padding-left:16px;font-size:15px;font-weight:600;white-space:nowrap;}
+  td.svc.sub{padding-left:30px;color:var(--ink);font-weight:600;}
+  .cellin{width:100%;min-width:60px;text-align:right;font-size:15px;font-weight:600;
+    border:1px solid var(--line);border-radius:9px;padding:9px 8px;background:var(--field);color:var(--ink);
+    font-variant-numeric:tabular-nums;}
+  .cellin:focus{outline:none;border-color:var(--clear);background:#fff;}
+  .cellin.sum{font-weight:700;background:#fff;}
+  td .prev{font-size:10.5px;color:var(--muted);text-align:right;margin-top:1px;height:12px;line-height:12px;}
+  .itogo td{padding:13px 8px;border-top:2px solid var(--line);background:#FAF7F0;}
+  .itogo .lbl{padding-left:16px;font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;}
+  .itogo .val{text-align:right;font-size:20px;font-weight:800;padding-right:10px;}
+
+  .pay{background:var(--surface);border-radius:18px;box-shadow:var(--shadow);border:1px solid var(--line);
+    margin-top:12px;padding:14px 16px;}
+  .payrow{display:flex;justify-content:space-between;align-items:center;padding:7px 0;}
+  .payrow span{font-size:15px;color:var(--muted);font-weight:600;}
+  .payrow b{font-size:16px;font-weight:700;}
+  .payrow.input span{color:var(--ink);font-size:17px;font-weight:700;}
+  .payrow input{width:150px;text-align:right;font-size:18px;font-weight:700;border:1.5px solid var(--line);
+    border-radius:11px;padding:11px 12px;background:var(--field);color:var(--ink);font-variant-numeric:tabular-nums;}
+  .payrow input:focus{outline:none;border-color:var(--clear);background:#fff;}
+  .ost{border-top:1px solid var(--line);margin-top:6px;padding-top:13px;}
+  .ost span{font-size:16px;font-weight:700;color:var(--ink);}
+  .ost b{font-size:23px;font-weight:800;}
+  .ost b.debt{color:var(--debt);} .ost b.clear{color:var(--clear);}
+
+  .hint{font-size:12px;color:var(--muted);text-align:center;margin:18px 8px 0;line-height:1.55;}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="appname">Коммунальные платежи</div>
+    <div class="yearbar">
+      <button id="prevYear" aria-label="Предыдущий год">‹</button>
+      <div class="yr tnum" id="yearLabel">2026</div>
+      <button id="nextYear" aria-label="Следующий год">›</button>
+    </div>
+  </header>
+
+  <div class="months" id="months"></div>
+
+  <div class="card">
+    <div class="card-title" id="monthTitle">Январь</div>
+    <div class="tscroll">
+    <table>
+      <thead>
+        <tr>
+          <th class="l">Услуга</th>
+          <th>Показания</th>
+          <th>Конечные показания</th>
+          <th>Ставка</th>
+          <th>Сумма</th>
+          <th>Показания счётчика</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+      <tfoot>
+        <tr class="itogo"><td class="lbl">Итого</td><td></td><td></td><td></td><td class="val tnum" id="itogo">0 ₽</td><td></td></tr>
+      </tfoot>
+    </table>
+    </div>
+  </div>
+
+  <div class="pay">
+    <div class="payrow"><span id="prevLabel">Долг с прошлого месяца</span><b class="tnum" id="prevBal">0 ₽</b></div>
+    <div class="payrow"><span>Итого к оплате</span><b class="tnum" id="toPay">0 ₽</b></div>
+    <div class="payrow input"><span>Оплачено</span><input id="paid" inputmode="decimal" placeholder="0"></div>
+    <div class="payrow ost"><span id="ostLabel">Остаток на конец месяца</span><b class="tnum" id="ost">0 ₽</b></div>
+  </div>
+
+  <div class="hint">Вписывайте показания счётчика и ставку — сумма посчитается сама (новые показания минус прошлые × ставка). Прошлые показания и ставка подставляются автоматически. Долг или переплата переходит на следующий месяц. Данные сохраняются на этом устройстве.</div>
+</div>
+
+<script>
+const ROWS = [
+  {key:'t1', label:'Т1', group:'Электроэнергия'},
+  {key:'t2', label:'Т2'},
+  {key:'t3', label:'Т3'},
+  {key:'water', label:'Вода (м³)'},
+  {key:'sewage', label:'Водоотведение', noCons:true},
+  {key:'gas', label:'Газ', noCons:true},
+];
+const KEYS = ROWS.map(r=>r.key);
+const NOCONS = new Set(ROWS.filter(r=>r.noCons).map(r=>r.key));
+const MON_SHORT = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
+const MON_FULL = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+const BASE_YEAR=2025, LAST_YEAR=2035, KEY="jkh:v2";
+
+let data = { rates:{}, startDebt:0, years:{} };
+let memFallback=null, curYear=BASE_YEAR, curM=0, saveTimer=null;
+
+const fmt = new Intl.NumberFormat('ru-RU',{maximumFractionDigits:2});
+const money = n => fmt.format(Math.round((n+Number.EPSILON)*100)/100)+" ₽";
+const numFmt = n => fmt.format(Math.round((n+Number.EPSILON)*1000)/1000);
+function parseNum(s){ if(s==null) return null; s=String(s).replace(/\s/g,'').replace(',','.').replace(/[^0-9.\-]/g,''); if(s==='') return null; const v=parseFloat(s); return isNaN(v)?null:v; }
+
+function load(){
+  try{ const raw=localStorage.getItem(KEY); if(raw) data=JSON.parse(raw); }
+  catch(e){ if(memFallback) data=memFallback; }
+  if(!data.years) data.years={};
+  if(!data.rates) data.rates={};
+  if(typeof data.startDebt!=="number") data.startDebt=0;
+}
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify(data)); }catch(e){ memFallback=data; } }
+function saveSoon(){ clearTimeout(saveTimer); saveTimer=setTimeout(save,400); }
+
+function rec(year,m,create){
+  const y=String(year);
+  if(!data.years[y]){ if(!create) return null; data.years[y]={}; }
+  if(!data.years[y][m]){ if(!create) return null; data.years[y][m]={readings:{},rates:{},manual:{},paid:0,date:"",note:""}; }
+  const r=data.years[y][m];
+  r.readings=r.readings||{}; r.rates=r.rates||{}; r.manual=r.manual||{}; r.meter=r.meter||{};
+  return r;
+}
+// последнее введённое показание этого счётчика до (year,m)
+function prevReading(year,m,key){
+  let y=year, mm=m-1, guard=0;
+  while(guard++<30){
+    if(mm<0){ y--; mm=11; if(y<BASE_YEAR-1) return null; }
+    const r=rec(y,mm,false);
+    if(r && r.readings[key]!=null && r.readings[key]!=='') return Number(r.readings[key]);
+    mm--;
+  }
+  return null;
+}
+function effRate(year,m,key){
+  const r=rec(year,m,false);
+  if(r && r.rates[key]!=null && r.rates[key]!=='') return Number(r.rates[key]);
+  if(data.rates[key]!=null) return Number(data.rates[key]);
+  return null;
+}
+function consumption(year,m,key){
+  if(NOCONS.has(key)) return null;
+  const r=rec(year,m,false);
+  if(!r || r.readings[key]==null || r.readings[key]==='') return null;
+  const prev=prevReading(year,m,key);
+  if(prev==null) return null;
+  const c=Number(r.readings[key])-prev;
+  return c<0?null:c;
+}
+function computedSum(year,m,key){
+  const c=consumption(year,m,key), rt=effRate(year,m,key);
+  if(c==null||rt==null) return null;
+  return c*rt;
+}
+function displaySum(year,m,key){
+  const r=rec(year,m,false);
+  if(r && r.manual[key]!=null && r.manual[key]!=='') return Number(r.manual[key]);
+  const cs=computedSum(year,m,key);
+  return cs==null?null:cs;
+}
+function itogo(year,m){ let s=0; KEYS.forEach(k=>{ const v=displaySum(year,m,k); if(v!=null) s+=v; }); return s; }
+function paidOf(year,m){ const r=rec(year,m,false); return r?(Number(r.paid)||0):0; }
+function balanceUpTo(year,m){ return itogo(year,m)+prevBalanceOf(year,m)-paidOf(year,m); }
+function prevBalanceOf(year,m){
+  if(m>0) return balanceUpTo(year,m-1);
+  if(year<=BASE_YEAR) return data.startDebt||0;
+  return balanceUpTo(year-1,11);
+}
+function hasData(year,m){
+  const r=rec(year,m,false); if(!r) return false;
+  if((Number(r.paid)||0)>0) return true;
+  return KEYS.some(k=> (r.readings[k]!=null&&r.readings[k]!=='') || displaySum(year,m,k)!=null);
+}
+
+/* ---------- Рендер ---------- */
+function renderChrome(){
+  document.getElementById('yearLabel').textContent=curYear;
+  document.getElementById('prevYear').style.visibility=curYear>BASE_YEAR?'visible':'hidden';
+  document.getElementById('nextYear').style.visibility=curYear<LAST_YEAR?'visible':'hidden';
+  const mc=document.getElementById('months'); mc.innerHTML="";
+  for(let m=0;m<12;m++){
+    const b=document.createElement('button');
+    b.className="mchip"+(m===curM?" active":"");
+    let pip="";
+    if(hasData(curYear,m)){ const bal=balanceUpTo(curYear,m); pip=bal>0.005?"debt":"clear"; }
+    b.innerHTML=`${MON_SHORT[m]}<span class="pip ${pip}"></span>`;
+    b.onclick=()=>{ curM=m; render(); const a=mc.children[m]; if(a) a.scrollIntoView({inline:'center',block:'nearest'}); };
+    mc.appendChild(b);
+  }
+}
+function rowSumPlaceholder(key){
+  const cs=computedSum(curYear,curM,key);
+  return cs==null?"0":fmt.format(Math.round(cs*100)/100);
+}
+function renderTable(){
+  document.getElementById('monthTitle').textContent=MON_FULL[curM]+" "+curYear;
+  const tb=document.getElementById('tbody'); tb.innerHTML="";
+  const r=rec(curYear,curM,false)||{readings:{},rates:{},manual:{}};
+  ROWS.forEach(row=>{
+    if(row.group){
+      const gr=document.createElement('tr'); gr.className="grouprow";
+      gr.innerHTML=`<td colspan="6">${row.group}</td>`; tb.appendChild(gr);
+    }
+    const tr=document.createElement('tr');
+    const isSub=!!ROWS.find(x=>x.key===row.key).group || ['t1','t2','t3'].includes(row.key);
+    const prev=prevReading(curYear,curM,row.key);
+    const rdVal=(r.readings[row.key]!=null?r.readings[row.key]:"");
+    const rtVal=(r.rates[row.key]!=null?r.rates[row.key]:"");
+    const rtPh=(data.rates[row.key]!=null?numFmt(data.rates[row.key]):"ставка");
+    const mnVal=(r.manual&&r.manual[row.key]!=null?r.manual[row.key]:"");
+    const mtVal=(r.meter&&r.meter[row.key]!=null?r.meter[row.key]:"");
+    const cons=row.noCons?null:consumption(curYear,curM,row.key);
+    const consCell=row.noCons
+      ? '<td></td>'
+      : `<td><div class="calccell ${cons==null?'empty':''}" id="cons-${row.key}">${cons==null?'—':numFmt(cons)}</div><div class="prev"></div></td>`;
+    tr.innerHTML=`
+      <td class="svc ${isSub?'sub':''}">${row.label}</td>
+      <td>
+        <input class="cellin" inputmode="decimal" data-k="${row.key}" data-f="reading" value="${rdVal}" placeholder="0">
+        <div class="prev">${prev!=null?('пред: '+numFmt(prev)):''}</div>
+      </td>
+      ${consCell}
+      <td>
+        <input class="cellin" inputmode="decimal" data-k="${row.key}" data-f="rate" value="${rtVal}" placeholder="${rtPh}">
+        <div class="prev"></div>
+      </td>
+      <td>
+        <input class="cellin sum" inputmode="decimal" data-k="${row.key}" data-f="manual" value="${mnVal}" placeholder="${rowSumPlaceholder(row.key)}">
+        <div class="prev"></div>
+      </td>
+      <td>
+        <input class="cellin" inputmode="decimal" data-k="${row.key}" data-f="meter" value="${mtVal}" placeholder="—">
+        <div class="prev"></div>
+      </td>`;
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll('input').forEach(inp=>inp.addEventListener('input',onCellInput));
+}
+function renderPay(){
+  const prev=prevBalanceOf(curYear,curM);
+  document.getElementById('prevLabel').textContent=(curM===0?"Долг с прошлого года":"Долг с прошлого месяца")+(prev<-0.005?" (переплата)":"");
+  document.getElementById('prevBal').textContent=(prev<0?"−":"")+money(Math.abs(prev));
+  const ito=itogo(curYear,curM);
+  document.getElementById('toPay').textContent=money(ito+prev);
+  const r=rec(curYear,curM,false);
+  document.getElementById('paid').value=r&&r.paid?r.paid:"";
+  updateTotals();
+}
+function updateTotals(){
+  const ito=itogo(curYear,curM);
+  document.getElementById('itogo').textContent=money(ito);
+  const prev=prevBalanceOf(curYear,curM);
+  document.getElementById('toPay').textContent=money(ito+prev);
+  const paid=parseNum(document.getElementById('paid').value)||0;
+  const bal=ito+prev-paid;
+  const ostEl=document.getElementById('ost');
+  ostEl.textContent=(bal<0?"−":"")+money(Math.abs(bal));
+  ostEl.className="tnum "+(bal>0.005?"debt":(bal<-0.005?"clear":""));
+  document.getElementById('ostLabel').textContent=bal>0.005?"Остаётся долг":(bal<-0.005?"Переплата (аванс)":"Остаток на конец месяца");
+}
+function render(){ renderChrome(); renderTable(); renderPay(); }
+
+/* ---------- Ввод ---------- */
+function onCellInput(e){
+  const inp=e.target, key=inp.dataset.k, field=inp.dataset.f;
+  const r=rec(curYear,curM,true);
+  const val=parseNum(inp.value);
+  if(field==='reading'){ r.readings[key]= inp.value.trim()===''?null:val; }
+  else if(field==='rate'){
+    r.rates[key]= inp.value.trim()===''?null:val;
+    if(val!=null) data.rates[key]=val;            // запоминаем последнюю ставку
+  }
+  else if(field==='manual'){ r.manual[key]= inp.value.trim()===''?null:val; }
+  else if(field==='meter'){ r.meter[key]= inp.value.trim()===''?null:val; }
+
+  // обновляем подсказку суммы у этой строки (если сумма не введена вручную)
+  if(field==='reading'||field==='rate'){
+    const sumInp=document.querySelector(`input[data-k="${key}"][data-f="manual"]`);
+    if(sumInp) sumInp.placeholder=rowSumPlaceholder(key);
+  }
+  if(field==='reading'){
+    const cEl=document.getElementById('cons-'+key);
+    if(cEl){ const c=consumption(curYear,curM,key);
+      if(c==null){ cEl.textContent='—'; cEl.className='calccell empty'; }
+      else { cEl.textContent=numFmt(c); cEl.className='calccell'; } }
+  }
+  updateTotals();
+  saveSoon();
+}
+document.getElementById('paid').addEventListener('input',e=>{
+  const r=rec(curYear,curM,true); r.paid=parseNum(e.target.value)||0; updateTotals(); saveSoon();
+});
+document.getElementById('prevYear').onclick=()=>{ if(curYear>BASE_YEAR){curYear--;render();} };
+document.getElementById('nextYear').onclick=()=>{ if(curYear<LAST_YEAR){curYear++;render();} };
+
+(function init(){
+  load();
+  const now=new Date();
+  if(now.getFullYear()>=BASE_YEAR && now.getFullYear()<=LAST_YEAR){ curYear=now.getFullYear(); curM=now.getMonth(); }
+  render();
+  const a=document.querySelectorAll('.mchip')[curM]; if(a) a.scrollIntoView({inline:'center',block:'nearest'});
+})();
+</script>
+</body>
+</html>
